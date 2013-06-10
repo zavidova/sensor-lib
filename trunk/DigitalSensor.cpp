@@ -14,6 +14,7 @@
  */
 
 #include "DigitalSensor.h"
+#include <Arduino.h>
 
 /******************************************************************************
  * Wiring/Arduino Includes
@@ -22,12 +23,9 @@ extern "C" {
   // AVR LibC Includes
   #include <inttypes.h>
   #include <stdlib.h>
-  #include <string.h>
-  #include "WConstants.h"
 
   // Wiring Core Includes
   #undef abs
-  #include "WConstants.h"
 
   // Wiring Core Prototypes
   //void pinMode(uint8_t, uint8_t);
@@ -73,6 +71,22 @@ void takeDigitalSample(digitalSensor_t &sensor) {
     sensor.samples[0] = digitalRead(sensor.id);
     sensor.lastSampleAt = millis();
   }
+}
+
+/**
+  Take the current reading and fill all samples, initializing this sensor to the current
+  environment in a non-firing state.
+**/
+void takeAllDigitalSamples(digitalSensor_t &sensor) {
+  sensor.samples[0] = digitalRead(sensor.id);
+  for (int i=0; i < sensor.sampleCount-1; i++) {
+    sensor.samples[i+1] = sensor.samples[i];
+  }
+  sensor.lastSampleAt = millis();
+}
+
+void DigitalSensor::takeAllSamples() {
+  takeAllDigitalSamples(data);
 }
 
 void DigitalSensor::takeSample() {
