@@ -14,6 +14,7 @@
  */
 
 #include "AnalogSensor.h"
+#include <Arduino.h>
 
 /******************************************************************************
  * Wiring/Arduino Includes
@@ -22,12 +23,8 @@ extern "C" {
   // AVR LibC Includes
   #include <inttypes.h>
   #include <stdlib.h>
-  #include <string.h>
-  #include "WConstants.h"
-
   // Wiring Core Includes
   #undef abs
-  #include "WConstants.h"
 
   // Wiring Core Prototypes
   //void pinMode(uint8_t, uint8_t);
@@ -67,8 +64,7 @@ AnalogSensor::AnalogSensor(char* name, int pin, int sample_count, unsigned long 
 }
 
 /***
-  If this sensor has reached its sampling interval, take a new value reading usi
-ng the
+  If this sensor has reached its sampling interval, take a new value reading using the
   collection function provided.
 */
 void SensorSample_(analogSensor_t &sensor, int(*getValueFunction)(analogSensor_t
@@ -82,8 +78,29 @@ void SensorSample_(analogSensor_t &sensor, int(*getValueFunction)(analogSensor_t
     sensor.samples[0] = getValueFunction(sensor);  }
 }
 
+/***
+  Take the current reading and fill all samples, initializing this sensor to the current
+  environment in a non-firing state.
+*/
+void SensorFill_(analogSensor_t &sensor, int(*getValueFunction)(analogSensor_t
+&)) {
+  sensor.samples[0] = getValueFunction(sensor);
+  for (int i=0; i < sensor.sampleCount-1; i++) {
+    sensor.samples[i+1] = sensor.samples[i];
+  }
+  sensor.lastSampleAt = millis();
+}
+
 void takeAnalogSensorSample(analogSensor_t &sensor) {
   SensorSample_(sensor, analogSensorValue);
+}
+
+void takeAllAnalogSensorSamples(analogSensor_t &sensor) {
+  SensorFill_(sensor, analogSensorValue);
+}
+
+void AnalogSensor::takeAllSamples() {
+  takeAllAnalogSensorSamples(data);
 }
 
 void AnalogSensor::takeSample() {

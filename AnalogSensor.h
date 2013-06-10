@@ -47,6 +47,8 @@ typedef struct {
 void initAnalogSensor(char* name, analogSensor_t &sensor, int pin, int sample_count, unsigned long int threshold, bool fireThresholdDirectionSensitive,
   unsigned long int interval);
 
+void takeAllAnalogSensorSamples(analogSensor_t&);
+
 void takeAnalogSensorSample(analogSensor_t&);
 
 int currentAnalogSensorAverageReading(analogSensor_t&);
@@ -95,6 +97,7 @@ public:
   int lastDelta();
   bool isFiring();
   void takeSample();
+  void takeAllSamples();
   int lastState();
   const analogSensor_t getData() { return data; }
 };

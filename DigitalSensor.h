@@ -54,6 +54,11 @@ void initDigitalSensor(digitalSensor_t &sensor, char* name, int pin, int sampleC
 void takeDigitalSample(digitalSensor_t&);
 
 /**
+  Take all samples from the current reading.
+*/
+void takeAllDigitalSamples(digitalSensor_t&);
+
+/**
   Report if the sensor has reached the thresholds specified when it was initialized.
 */
 bool isDigitalSensorFiring(digitalSensor_t&);
@@ -70,6 +75,7 @@ public:
     unsigned long int sampleInterval);
   char* name();
   void takeSample();
+  void takeAllSamples();
   bool isFiring();
   bool lastState();
   const digitalSensor_t getData() { return data; }
