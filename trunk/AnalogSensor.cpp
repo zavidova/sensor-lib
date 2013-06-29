@@ -38,7 +38,7 @@ int analogSensorValue(analogSensor_t &sensor) {
 /***
  Setup the analog sensor on the designated pin
 */
-void initAnalogSensor(analogSensor_t &sensor, char* name, int pin, int sample_count, unsigned long int thresholdPct, unsigned long int thresholdDelta, bool fireThresholdDirectionSensitive,
+void initAnalogSensor(analogSensor_t &sensor, char* name, int pin, int sample_count, unsigned long int thresholdPct, unsigned long int thresholdDelta, unsigned long int thresholdAvgDev, bool fireThresholdDirectionSensitive,
 unsigned long int interval) {
   sensor.name = (char*) calloc(strlen(name)+1, sizeof(char));
   if (sensor.name) { // did we get the memory?
@@ -47,6 +47,7 @@ unsigned long int interval) {
   sensor.id = pin;
   sensor.fireThresholdPct = thresholdPct;
   sensor.fireThresholdDelta = thresholdDelta;
+  sensor.fireThresholdAvgDev = thresholdAvgDev;
   sensor.fireThresholdDirectionSensitive = fireThresholdDirectionSensitive;
   sensor.sampleCount = sample_count;
   sensor.samples = (int*)malloc(sizeof(int) * sensor.sampleCount);
@@ -58,9 +59,9 @@ unsigned long int interval) {
   }
 }
 
-AnalogSensor::AnalogSensor(char* name, int pin, int sample_count, unsigned long int thresholdPct, unsigned long int thresholdDelta, bool fireThresholdDirectionSensitive,
+AnalogSensor::AnalogSensor(char* name, int pin, int sample_count, unsigned long int thresholdPct, unsigned long int thresholdDelta, unsigned long int thresholdAvgDev, bool fireThresholdDirectionSensitive,
 	unsigned long int interval) {
-  initAnalogSensor(data, name, pin, sample_count, thresholdPct, thresholdDelta, fireThresholdDirectionSensitive, interval);
+  initAnalogSensor(data, name, pin, sample_count, thresholdPct, thresholdDelta, thresholdAvgDev, fireThresholdDirectionSensitive, interval);
 }
 
 /***
@@ -114,6 +115,15 @@ int currentAnalogSensorAverageReading(analogSensor_t &sensor) {
   }
   averageReading /= sensor.sampleCount;
   return averageReading;
+}
+
+int currentAnalogSensorAverageDeviationReading(analogSensor_t &sensor) {
+  int averageReading = currentAnalogSensorAverageReading(sensor);
+  int totalDeviation = 0;
+  for (int i=0; i < sensor.sampleCount; i++) {
+    totalDeviation += abs(sensor.samples[i] - averageReading);
+  }
+  return totalDeviation / sensor.sampleCount;
 }
 
 int currentAnalogSensorMaxReading(analogSensor_t &sensor) {
@@ -172,6 +182,10 @@ int AnalogSensor::currentMinReading() {
   return currentAnalogSensorMinReading(data);
 }
 
+int AnalogSensor::currentAverageDeviationReading() {
+  return currentAnalogSensorAverageDeviationReading(data);
+}
+
 int AnalogSensor::currentAverageReading() {
   return currentAnalogSensorAverageReading(data);
 }
@@ -200,7 +214,8 @@ int AnalogSensor::currentPercentOfAverage() {
   The sensor is firing if the current reading's variance is higher than the
   pctFiringThreshold for this sensor, or the current reading is either the
   samples' max or min and the current delta is higher than the
-  deltaFiringThreshold for this sensor.
+  deltaFiringThreshold for this sensor or the current sample sets' average
+  deviation is higher than the avgDevFiringThreshold for this sensor.
 **/
 bool isAnalogSensorFiring(analogSensor_t &sensor) {
   int variance = currentAnalogSensorVariance(sensor);
@@ -209,6 +224,7 @@ bool isAnalogSensorFiring(analogSensor_t &sensor) {
 
   bool isFiringByPct = false;
   bool isFiringByDelta = false;
+  bool isFiringByAvgDev = false;
 
   if (sensor.fireThresholdPct != 0) {
     if (sensor.fireThresholdDirectionSensitive && sensor.fireThresholdPct < 0 && variance < 0) {
@@ -217,6 +233,11 @@ bool isAnalogSensorFiring(analogSensor_t &sensor) {
     else {
       isFiringByPct = (abs(sensor.fireThresholdPct) < abs(variance));
     }
+  }
+
+  if (sensor.fireThresholdAvgDev != 0) {
+    isFiringByAvgDev = (sensor.fireThresholdAvgDev
+      < currentAnalogSensorAverageDeviationReading(sensor));
   }
 
   if (sensor.fireThresholdDelta != 0) {
@@ -228,7 +249,7 @@ bool isAnalogSensorFiring(analogSensor_t &sensor) {
       && (currentAnalogSensorDelta(sensor) >= sensor.fireThresholdDelta);
   }
  
-  return (isFiringByPct || isFiringByDelta);
+  return (isFiringByPct || isFiringByDelta || isFiringByAvgDev);
 }
 
 bool AnalogSensor::isFiring() {
