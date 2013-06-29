@@ -45,8 +45,9 @@
 class PingSensor : public AnalogSensor {
 public:
 PingSensor(char* name, int d_pin, int sample_count, unsigned long int thresholdPct,
-  unsigned long int thresholdDelta, bool fireThresholdDirectionSensitive, unsigned long int interval)
-  : AnalogSensor(name, d_pin, sample_count, thresholdPct, thresholdDelta, fireThresholdDirectionSensitive,
+  unsigned long int thresholdDelta, unsigned long int thresholdAvgDev,
+  bool fireThresholdDirectionSensitive, unsigned long int interval)
+  : AnalogSensor(name, d_pin, sample_count, thresholdPct, thresholdDelta, thresholdAvgDev, fireThresholdDirectionSensitive,
     interval)
     {};
   void takeSample();
